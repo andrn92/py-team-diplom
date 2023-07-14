@@ -7,7 +7,7 @@ import requests
 
 
 class Vkinder():
-    host = '/home/andrey/Vkinder/'
+    host = '/home/andrey/py-team-diplom/'
     def __init__(self):
         self.border = 1001
 
