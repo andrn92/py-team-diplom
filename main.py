@@ -194,7 +194,7 @@ def launch():
                             upload_image = upload.photo_messages(photos=image)[0]
                             attachments.append('photo{}_{}'.format(upload_image['owner_id'], upload_image['id']))
                     vkinder.write_message(vk_session, event.user_id, vkinder.output_users_info(vk_session, partner_id), attachments)
-                elif request == 'likes':
+                elif request == 'liked':
                     selected_users = vkinder.get_selected_people()
                     vkinder.write_message(vk_session, event.user_id, selected_users)
                 elif request in list_greet:
