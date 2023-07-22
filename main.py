@@ -24,15 +24,15 @@ class Vkinder():
     def write_message(self, obj, user_id, message, attachments=[]):
         obj.method('messages.send', {'user_id': user_id, 'message': message,  'random_id': randrange(10 ** 7), 'attachment': ','.join(attachments)})
 
+    def get_user_data(self, obj, user_id):
+        res = obj.method('users.get', {'user_id': user_id, 'v': '5.131', 'fields': 'sex, bdate, city, relation'})
+        return res
+
     def output_users_info(self, obj, user_id):
         res = self.get_user_data(obj, user_id)
         profile_link = 'https://vk.com/id' + str(res[0]['id'])
         return '- {} {}\n- {}\n'.format(res[0]['first_name'], res[0]['last_name'], profile_link)
     
-    def get_user_data(self, obj, user_id):
-        res = obj.method('users.get', {'user_id': user_id, 'v': '5.131', 'fields': 'sex, bdate, city, relation'})
-        return res
-
     def get_user_data_for_search(self, obj, user_id):
         res = self.get_user_data(obj, user_id)
         if 'is_closed' in res[0] and res[0]['is_closed'] or 'deactivated' in res[0] and (res[0]['deactivated'] == 'banned' or res[0]['deactivated'] == 'deleted'):
@@ -78,13 +78,13 @@ class Vkinder():
         
     def get_popular_photos(self, user_id):
         photos = self.get_photos(user_id)
-        photos_id_likes = []
+        photo_ids_liked = []
         if photos:
             for photo in photos:
-                photos_id_likes.append((photo['id'], photo['likes']['count']))
-            photos_id_likes = sorted(photos_id_likes, reverse=True, key=lambda x: x[1])
-            id_photos = [item[0] for item in photos_id_likes[:3]]
-            return id_photos
+                photo_ids_liked.append((photo['id'], photo['likes']['count']))
+            photo_ids_liked = sorted(photo_ids_liked, reverse=True, key=lambda x: x[1])
+            ids_photo = [item[0] for item in photo_ids_liked[:3]]
+            return ids_photo
         return []
 
     def get_photo_best_quality(self, photos):
@@ -122,6 +122,13 @@ class Vkinder():
                 image_name = self.download_photo(url_photo)
                 list_images.append(image_name)
         return list_images
+    
+    def get_downloads_photos(self, user_id):
+        list_popular_photos = self.get_popular_photos(user_id)
+        dict_best_photos = self.get_photo_best_quality(self.get_photos(user_id))
+        urls_photo = [value for key, value in dict_best_photos.items() if key in list_popular_photos]
+        list_images = self.download_photos(urls_photo)
+        return list_images
 
     def search_match_users(self, obj, user_id, num=1):
         list_images = ''
@@ -135,17 +142,10 @@ class Vkinder():
                 if abs(partner_info[1] - human_info[1]) <= 5:
                     with open(self.host + 'partners_list.txt', 'a', encoding='utf8') as f:
                         f.write(str(partner_id) + '\n')
-                    list_images = self.get_downloads_photo(partner_id)
+                    list_images = self.get_downloads_photos(partner_id)
             if list_images:
                 return list_images, partner_id
             
-    def get_downloads_photo(self, user_id):
-        list_popular_photos = self.get_popular_photos(user_id)
-        dict_best_photos = self.get_photo_best_quality(self.get_photos(user_id))
-        urls_photo = [value for key, value in dict_best_photos.items() if key in list_popular_photos]
-        list_images = self.download_photos(urls_photo)
-        return list_images
-
     def get_selected_people(self):
         with open(self.host + 'partners_list.txt', encoding='utf8') as f:
             list_ids = f.readlines()
