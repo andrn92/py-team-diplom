@@ -10,6 +10,7 @@ class Vkinder():
     host = '/home/andrey/py-team-diplom/'
     def __init__(self):
         self.border = 1001
+        self.partner_id = self.get_number_cicle('partners_list.txt')
 
     def get_token(self):
         with open(self.host + 'token_bot.txt') as f:
@@ -140,11 +141,10 @@ class Vkinder():
             partner_info = self.get_user_data_for_search(obj, partner_id)
             if 0 != partner_info[0] != human_info[0] != 0 and partner_info[2] == human_info[2] and partner_info[1] and human_info[1] and partner_info[3] and human_info[3]:
                 if abs(partner_info[1] - human_info[1]) <= 5:
-                    with open(self.host + 'partners_list.txt', 'a', encoding='utf8') as f:
-                        f.write(str(partner_id) + '\n')
+                    self.partner_id = partner_id
                     list_images = self.get_downloads_photos(partner_id)
             if list_images:
-                return list_images, partner_id
+                return list_images
             
     def get_selected_people(self):
         with open(self.host + 'partners_list.txt', encoding='utf8') as f:
@@ -156,15 +156,21 @@ class Vkinder():
 
     def get_number_cicle(self, filename):
         filename = self.host + filename
-        number = 1
         with open(filename, 'r', encoding='utf8') as f:
             data_list = f.readlines()
         if not data_list:
             return 1
-        number = int(data_list[-1].strip()) + 1
-        return number
+        return int(data_list[-1].strip())
     
+    def record_id(self):
+        with open(self.host + 'partners_list.txt', encoding='utf-8') as f:
+            data_list = f.readlines()
+        data_list = [item.strip() for item in data_list]
+        with open(self.host + 'partners_list.txt', '+a', encoding='utf8') as f:
+            if str(self.partner_id) not in data_list:
+                f.write(str(self.partner_id) + '\n')
 
+    
 def launch():
     vkinder = Vkinder()
     vk_session = vk_api.VkApi(token=vkinder.get_token())
@@ -172,28 +178,25 @@ def launch():
     upload = VkUpload(vk_session)
     list_greet = ['hello', 'hi', 'good morning', 'good afternoon', 'good evening']
     list_bye = ['goodbye', 'bye', 'good bye', 'bye bye']
-    number = vkinder.get_number_cicle('partners_list.txt')
-    if vkinder.border < number:
-        vkinder.border = number + 1000
-    list_images = [] 
+    
+    if vkinder.border < vkinder.partner_id:
+        vkinder.border = vkinder.partner_id + 1000
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW:
             if event.to_me:
                 request = event.text
                 if request == 'start':
-                    number = vkinder.get_number_cicle('partners_list.txt')
+                    number = vkinder.partner_id + 1
                     data_images = vkinder.search_match_users(vk_session, event.user_id, num=number)
                     while not data_images:
                         number, vkinder.border = vkinder.border, vkinder.border + 1000
                         data_images = vkinder.search_match_users(vk_session, event.user_id, num=number)
-                    list_images = data_images[0]
-                    partner_id = data_images[1]
                     attachments = []
-                    if list_images:
-                        for image in list_images:
+                    if data_images:
+                        for image in data_images:
                             upload_image = upload.photo_messages(photos=image)[0]
                             attachments.append('photo{}_{}'.format(upload_image['owner_id'], upload_image['id']))
-                    vkinder.write_message(vk_session, event.user_id, vkinder.output_users_info(vk_session, partner_id), attachments)
+                    vkinder.write_message(vk_session, event.user_id, vkinder.output_users_info(vk_session, vkinder.partner_id), attachments)
                 elif request == 'liked':
                     selected_users = vkinder.get_selected_people()
                     vkinder.write_message(vk_session, event.user_id, selected_users)
@@ -203,6 +206,8 @@ def launch():
                 elif request in list_bye:
                     vkinder.write_message(vk_session, event.user_id, f"Bye bye")
                     vkinder.send_sticker(vk_session, event.user_id, 75)
+                elif request == 'record':
+                    vkinder.record_id()
                 elif request == 'quit':
                     vkinder.write_message(vk_session, event.user_id, "Good luck!")
                     break
