@@ -8,9 +8,12 @@ import requests
 
 class Vkinder():
     host = '/home/andrey/py-team-diplom/'
-    def __init__(self):
+    def __init__(self, id_partner=1):
         self.border = 1001
-        self.partner_id = self.get_number_cicle('partners_list.txt')
+        if id_partner == 1:
+            self.partner_id = self.get_number_cicle('partners_list.txt')
+        else:
+            self.partner_id = id_partner
 
     def get_token(self):
         with open(self.host + 'token_bot.txt') as f:
